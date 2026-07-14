@@ -1,42 +1,75 @@
-# pd-code-n-cabling
-given a knot/link pd_code, get the pd_code for its n-cabling link.
+# n-parallel
 
+`n-parallel` computes an `n`-parallel of a knot or link planar diagram (PD)
+code. Every component is replaced by `n` parallel components and every
+remaining crossing is replaced by an `n × n` crossing block.
 
+The implementation is pure Python and has no third-party runtime dependencies.
 
-## PD_CODE 四元组顺序
+## PD Convention
 
-为了避免不同文章对于 pd_code 的定义不同，本文约定了使用的 pd_code 四元组顺序为：
+Each crossing is written as four labels beginning with the incoming under-arc
+and continuing clockwise. Along every oriented component, labels must form one
+consecutive integer interval. The full PD code must use exactly the labels
+`1..2c`, and every label must occur twice.
 
-- 从下方进入的 arc 开始，顺时针旋转，依次填写四个 arc 的编号。
+There are two local crossing forms. If `b+` and `a+` denote successors along
+their components and `a-` denotes the predecessor of `a`, they are:
 
+```text
+[b, a, b+, a-]
+[b, a, b+, a+]
+```
 
+Both forms are expanded independently into the corresponding cable crossing
+matrix. Labels are then renumbered while preserving their total order.
 
-## 方法
+## Python API
 
-在 link 的 pd_code 中，从本质上讲，有且仅有两种 crossing：
+```python
+from n_parallel import n_parallel
 
-1. 形如 $[b, a+1, b+1, a]$ 的 crossing（如图一）；
-2. 形如 $[b, a, b+1, a+1]$ 的 crossing（如图二）；
+trefoil = [[1, 5, 2, 4], [3, 1, 4, 6], [5, 3, 6, 2]]
+parallel = n_parallel(trefoil, 2)
+print(parallel)
+```
 
-<img src="./img/crossing-type.png">
+## Command Line
 
-不难证明所有 crossing 都可以被区分为上述两种，我们只需要针对上述两种结构分别构建 cabling 后的 pd_code 即可。
+Run the package module from the repository root:
 
+```sh
+python -m n_parallel 2 "[[1,5,2,4],[3,1,4,6],[5,3,6,2]]"
+```
 
+The result is written as compact JSON.
 
-## 基本原则
+## Cabling, Doubling, and Framing
 
-1. 左侧新增：在进行 calbing 时，我们总是在原有的 arc 前进方向左侧增加一个新的 arc；
+A general `(p,q)` cable is a satellite construction on the boundary of a
+tubular neighborhood, with its slope measured relative to a chosen meridian
+and preferred longitude. That operation is not implemented here: there is no
+`q` parameter and no strand-closing braid that would construct a general cable
+knot.
 
+The local `n × n` replacement in this repository instead constructs parallel
+copies of the input diagram. A direct blackboard parallel depends on diagram
+framing because an R1 move changes writhe. The historical implementation first
+removes explicit R1 kinks, and this behavior is retained so diagrams differing
+only by those reducible kinks produce the same output.
 
+This R1 normalization should not be confused with a complete preferred-longitude
+framing calculation. Callers that require a mathematically specified `(p,q)`
+cable must supply the corresponding framing/twist construction separately.
+A crossingless component cannot be represented faithfully by ordinary PD
+crossings; therefore `PD[]` returns `[]` and does not encode the number of
+parallel components.
 
-## 交叉点矩阵
+## Tests
 
-在进行 n-cabling 后，原有的一个交叉点，会被变化为一个交叉点矩阵：
+```sh
+python -m unittest discover -s tests -v
+```
 
-<img src="./img/cabling-for-one-crossing.png">
-
-设原先 arc 的总数为 $M$，则定义 $a[j]=jM+a, b[i]=iM+b$。让 $(i, j)$ 取遍 $(0, 0)$ 到 $(n-1, n-1)$ 的所有二元整数对即可构建出所有交叉点。
-
-在完成所有交叉点矩阵的构建之后，我们需要将所有编号重新进行**离散化操作**，在保全序不变的前提下，让编号变为整数。
-
+The suite checks one-cable identity, both crossing orientations, crossing-count
+growth, label multiplicities, R1 normalization, and invalid input handling.
