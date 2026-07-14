@@ -73,3 +73,16 @@ python -m unittest discover -s tests -v
 
 The suite checks one-cable identity, both crossing orientations, crossing-count
 growth, label multiplicities, R1 normalization, and invalid input handling.
+
+## Citation
+
+If you use this repository in academic work, please cite it as:
+
+```bibtex
+@software{topologicalknotindexer_n_parallel,
+  author = {{TopologicalKnotIndexer contributors}},
+  title = {{n-parallel}},
+  year = {2026},
+  url = {https://github.com/TopologicalKnotIndexer/n-parallel}
+}
+```
